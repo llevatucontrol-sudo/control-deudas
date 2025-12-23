@@ -6,9 +6,12 @@
   <title>Control de Deudas</title>
 
   <style>
-    :root{ --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#4b5563; --line:#e5e7eb; --ok:#16a34a; --bad:#dc2626; }
+    :root{
+      --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#4b5563; --line:#e5e7eb;
+      --ok:#16a34a; --bad:#dc2626; --warn:#f59e0b; --chip:#fff7ed; --chipb:#fed7aa; --chipc:#9a3412;
+    }
     body{ font-family: Arial, sans-serif; background:var(--bg); margin:0; padding:40px; color:var(--text); }
-    .wrap{ max-width:780px; margin:0 auto; }
+    .wrap{ max-width:900px; margin:0 auto; }
     .card{
       background:var(--card);
       padding:26px;
@@ -35,38 +38,94 @@
       cursor:pointer;
       font-weight:700;
       font-size:14px;
+      white-space:nowrap;
     }
     .btn{ background:#111827; color:#fff; }
     .btn:hover{ opacity:.92; }
-    .topbar{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:14px; }
-    .stats{ color:var(--muted); font-size:14px; }
-    .list{ margin-top:12px; }
-    .item{
-      display:grid;
-      grid-template-columns: 1.2fr .6fr .7fr auto;
-      gap:10px;
-      align-items:center;
-      padding:12px;
+
+    .topbar{ display:flex; gap:10px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-top:14px; }
+    .stats{ color:var(--muted); font-size:14px; line-height:1.5; }
+    .big{
+      font-size:14px;
+      padding:10px 12px;
       border:1px solid var(--line);
       border-radius:12px;
+      background:#fafafa;
+    }
+    .big strong{ color:#111827; }
+
+    .list{ margin-top:12px; }
+    .empty{ color:var(--muted); padding:14px; text-align:center; }
+
+    /* Item */
+    details.item{
+      border:1px solid var(--line);
+      border-radius:14px;
       background:#fff;
       margin-bottom:10px;
+      overflow:hidden;
     }
-    .who{ font-weight:700; }
-    .tag{ font-size:12px; padding:4px 8px; border-radius:999px; display:inline-block; }
-    .tag.pend{ background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
-    .tag.pag{ background:#ecfdf5; color:#166534; border:1px solid #bbf7d0; }
+    summary{
+      list-style:none;
+      cursor:pointer;
+      padding:14px;
+      display:grid;
+      grid-template-columns: 1.2fr .7fr .7fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    .who{ font-weight:800; text-transform: none; }
     .mini{ color:var(--muted); font-size:12px; margin-top:4px; }
+    .money{ font-weight:800; }
+    .tag{ font-size:12px; padding:4px 8px; border-radius:999px; display:inline-block; border:1px solid transparent; }
+    .tag.pend{ background:var(--chip); color:var(--chipc); border-color:var(--chipb); }
+    .tag.pag{ background:#ecfdf5; color:#166534; border:1px solid #bbf7d0; }
+    .tag.par{ background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+
     .actions{ display:flex; gap:8px; justify-content:flex-end; }
     .ok{ background:var(--ok); color:#fff; }
     .del{ background:var(--bad); color:#fff; }
-    .empty{ color:var(--muted); padding:14px; text-align:center; }
+    .abon{ background:#0ea5e9; color:#fff; }
+    .ghost{ background:#11182710; color:#111827; border:1px solid var(--line); }
+
+    .inside{
+      border-top:1px solid var(--line);
+      padding:14px;
+      background:#fafafa;
+    }
+    .inside h4{ margin:0 0 10px 0; }
+    .abonoRow{
+      display:grid;
+      grid-template-columns: 1fr .7fr auto;
+      gap:10px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .abonosList{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+    .abonoItem{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px;
+      border-bottom:1px solid var(--line);
+      font-size:14px;
+    }
+    .abonoItem:last-child{ border-bottom:0; }
+    .abDate{ color:var(--muted); font-size:12px; }
+
     .footer{ color:var(--muted); font-size:12px; text-align:center; margin-top:10px; }
-    @media (max-width:720px){
+    @media (max-width:820px){
       body{ padding:18px; }
       .row{ grid-template-columns: 1fr; }
-      .item{ grid-template-columns: 1fr; }
-      .actions{ justify-content:flex-start; }
+      summary{ grid-template-columns: 1fr; }
+      .actions{ justify-content:flex-start; flex-wrap:wrap; }
+      .abonoRow{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -78,13 +137,13 @@
       <p class="sub">Organiza tus deudas paso a paso 💙</p>
 
       <div class="row">
-        <input id="inpQuien" placeholder="¿A quién le debes? (Ej: Norida, Banco, Rafael)" />
-        <input id="inpMonto" placeholder="Monto (Ej: 250000)" inputmode="numeric" />
+        <input id="inpQuien" placeholder="¿A quién le debes? (Ej: Nona, Laura, Banco)" />
+        <input id="inpMonto" placeholder="Monto inicial (Ej: 250000)" inputmode="numeric" />
         <button class="btn" id="btnAgregar">Agregar deuda</button>
       </div>
 
       <div class="topbar">
-        <div class="stats" id="stats"></div>
+        <div class="stats big" id="stats"></div>
         <select id="filtro">
           <option value="todas">Todas</option>
           <option value="pendientes">Pendientes</option>
@@ -101,7 +160,7 @@
   </div>
 
   <script>
-    const KEY = "controlDeudas_v1";
+    const KEY = "controlDeudas_v2"; // nueva versión con abonos
 
     const inpQuien = document.getElementById("inpQuien");
     const inpMonto = document.getElementById("inpMonto");
@@ -117,39 +176,42 @@
         return "$" + Number(n).toLocaleString("es-CO");
       }
     }
-
-    function load(){
-      try{
-        return JSON.parse(localStorage.getItem(KEY)) || [];
-      }catch(e){
-        return [];
-      }
+    function normalizeAmount(value){
+      const cleaned = (value || "").toString().replace(/[^\d]/g, "");
+      return cleaned ? Number(cleaned) : 0;
     }
-
+    function uid(){
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+    function load(){
+      try{ return JSON.parse(localStorage.getItem(KEY)) || []; }
+      catch(e){ return []; }
+    }
     function save(data){
       localStorage.setItem(KEY, JSON.stringify(data));
     }
 
-    function uid(){
-      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    function getAbonado(item){
+      return (item.abonos || []).reduce((a,b)=>a + (b.monto||0), 0);
     }
-
-    function normalizeAmount(value){
-      // permite escribir con puntos/comedas y lo convierte a número
-      const cleaned = (value || "").toString().replace(/[^\d]/g, "");
-      return cleaned ? Number(cleaned) : 0;
+    function getSaldo(item){
+      const abonado = getAbonado(item);
+      return Math.max(0, (item.montoInicial || 0) - abonado);
+    }
+    function getEstado(item){
+      return getSaldo(item) <= 0 ? "pagada" : "pendiente";
     }
 
     function addDebt(){
       const quien = (inpQuien.value || "").trim();
-      const monto = normalizeAmount(inpMonto.value);
+      const montoInicial = normalizeAmount(inpMonto.value);
 
       if(!quien){
         alert("Escribe a quién le debes 🙂");
         inpQuien.focus();
         return;
       }
-      if(!monto || monto <= 0){
+      if(!montoInicial || montoInicial <= 0){
         alert("Escribe un monto válido 🙂");
         inpMonto.focus();
         return;
@@ -159,50 +221,83 @@
       data.unshift({
         id: uid(),
         quien,
-        monto,
-        estado: "pendiente",
-        creado: new Date().toISOString()
+        montoInicial,
+        creado: new Date().toISOString(),
+        abonos: [] // aquí guardamos los abonos
       });
       save(data);
 
       inpQuien.value = "";
       inpMonto.value = "";
       inpQuien.focus();
-
-      render();
-    }
-
-    function togglePaid(id){
-      const data = load();
-      const item = data.find(x => x.id === id);
-      if(!item) return;
-      item.estado = (item.estado === "pendiente") ? "pagada" : "pendiente";
-      save(data);
       render();
     }
 
     function removeDebt(id){
-      if(!confirm("¿Eliminar esta deuda?")) return;
+      if(!confirm("¿Eliminar esta deuda (y sus abonos)?")) return;
       const data = load().filter(x => x.id !== id);
       save(data);
       render();
     }
 
+    function addAbono(id){
+      const input = document.querySelector(`[data-abono-input="${id}"]`);
+      const monto = normalizeAmount(input?.value);
+      if(!monto || monto <= 0){
+        alert("Escribe un abono válido 🙂");
+        input?.focus();
+        return;
+      }
+
+      const data = load();
+      const item = data.find(x => x.id === id);
+      if(!item) return;
+
+      item.abonos = item.abonos || [];
+      item.abonos.unshift({ id: uid(), monto, fecha: new Date().toISOString() });
+
+      save(data);
+      if(input) input.value = "";
+      render();
+    }
+
+    function removeAbono(deudaId, abonoId){
+      const data = load();
+      const item = data.find(x => x.id === deudaId);
+      if(!item) return;
+      item.abonos = (item.abonos || []).filter(a => a.id !== abonoId);
+      save(data);
+      render();
+    }
+
     function applyFilter(data){
-      if(filtro.value === "pendientes") return data.filter(x => x.estado === "pendiente");
-      if(filtro.value === "pagadas") return data.filter(x => x.estado === "pagada");
-      return data;
+      const view = data.map(x => ({...x, estado: getEstado(x), saldo: getSaldo(x), abonado: getAbonado(x)}));
+      if(filtro.value === "pendientes") return view.filter(x => x.estado === "pendiente");
+      if(filtro.value === "pagadas") return view.filter(x => x.estado === "pagada");
+      return view;
     }
 
     function render(){
-      const data = load();
-      const pendientes = data.filter(x => x.estado === "pendiente");
-      const pagadas = data.filter(x => x.estado === "pagada");
+      const raw = load();
+      const all = raw.map(x => ({...x, estado: getEstado(x), saldo: getSaldo(x), abonado: getAbonado(x)}));
 
-      const totalPend = pendientes.reduce((a,b)=>a+b.monto,0);
-      stats.textContent = `Pendientes: ${pendientes.length} (${moneyCOP(totalPend)}) · Pagadas: ${pagadas.length}`;
+      const pendientes = all.filter(x => x.estado === "pendiente");
+      const pagadas = all.filter(x => x.estado === "pagada");
 
-      const view = applyFilter(data);
+      const totalInicial = all.reduce((a,b)=>a + (b.montoInicial||0), 0);
+      const totalAbonado = all.reduce((a,b)=>a + (b.abonado||0), 0);
+      const totalSaldo = all.reduce((a,b)=>a + (b.saldo||0), 0);
+
+      const totalPend = pendientes.reduce((a,b)=>a + (b.saldo||0), 0);
+
+      stats.innerHTML =
+        `Total inicial: <strong>${moneyCOP(totalInicial)}</strong> · ` +
+        `Total abonado: <strong>${moneyCOP(totalAbonado)}</strong> · ` +
+        `Saldo total: <strong>${moneyCOP(totalSaldo)}</strong><br>` +
+        `Pendientes: <strong>${pendientes.length}</strong> (${moneyCOP(totalPend)}) · ` +
+        `Pagadas: <strong>${pagadas.length}</strong>`;
+
+      const view = applyFilter(raw);
 
       if(view.length === 0){
         lista.innerHTML = `<div class="empty">Aún no tienes deudas en esta vista.</div>`;
@@ -210,28 +305,97 @@
       }
 
       lista.innerHTML = view.map(x => {
-        const tag = x.estado === "pendiente"
-          ? `<span class="tag pend">Pendiente</span>`
-          : `<span class="tag pag">Pagada</span>`;
+        const creado = new Date(x.creado);
+        const mini = isNaN(creado) ? "" : `Creada: ${creado.toLocaleDateString("es-CO")}`;
 
-        const fecha = new Date(x.creado);
-        const mini = isNaN(fecha) ? "" : `Creada: ${fecha.toLocaleDateString("es-CO")}`;
+        const tag =
+          x.estado === "pagada"
+            ? `<span class="tag pag">Pagada</span>`
+            : (x.abonado > 0 ? `<span class="tag par">Con abonos</span>` : `<span class="tag pend">Pendiente</span>`);
+
+        const abonos = (x.abonos || []);
+        const abonosHtml = abonos.length ? abonos.map(a => {
+          const f = new Date(a.fecha);
+          const fd = isNaN(f) ? "" : f.toLocaleDateString("es-CO");
+          return `
+            <div class="abonoItem">
+              <div>
+                <div><strong>${moneyCOP(a.monto)}</strong></div>
+                <div class="abDate">${fd}</div>
+              </div>
+              <button class="ghost" data-del-abono="${x.id}|${a.id}">Quitar</button>
+            </div>
+          `;
+        }).join("") : `<div class="empty" style="padding:10px;">Aún no hay abonos.</div>`;
 
         return `
-          <div class="item">
-            <div>
-              <div class="who">${x.quien}</div>
-              <div class="mini">${mini}</div>
+          <details class="item">
+            <summary>
+              <div>
+                <div class="who">${x.quien}</div>
+                <div class="mini">${mini}</div>
+              </div>
+
+              <div>
+                <div class="mini">Monto inicial</div>
+                <div class="money">${moneyCOP(x.montoInicial || 0)}</div>
+              </div>
+
+              <div>
+                <div class="mini">Saldo</div>
+                <div class="money">${moneyCOP(getSaldo(x))}</div>
+              </div>
+
+              <div class="actions">
+                ${tag}
+                <button class="abon" data-add-abono-open="${x.id}">Agregar abono</button>
+                <button class="del" data-del="${x.id}">Eliminar</button>
+              </div>
+            </summary>
+
+            <div class="inside">
+              <h4>Abonos</h4>
+
+              <div class="abonoRow">
+                <input data-abono-input="${x.id}" placeholder="Monto del abono (Ej: 200000)" inputmode="numeric" />
+                <button class="abon" data-add-abono="${x.id}">Guardar abono</button>
+                <div class="mini">Abonado: <strong>${moneyCOP(getAbonado(x))}</strong></div>
+              </div>
+
+              <div class="abonosList">
+                ${abonosHtml}
+              </div>
             </div>
-            <div><strong>${moneyCOP(x.monto)}</strong></div>
-            <div>${tag}</div>
-            <div class="actions">
-              <button class="ok" onclick="togglePaid('${x.id}')">${x.estado === "pendiente" ? "Marcar pagada" : "Volver pendiente"}</button>
-              <button class="del" onclick="removeDebt('${x.id}')">Eliminar</button>
-            </div>
-          </div>
+          </details>
         `;
       }).join("");
+
+      // Eventos (después de pintar)
+      document.querySelectorAll("[data-del]").forEach(btn=>{
+        btn.addEventListener("click", ()=> removeDebt(btn.getAttribute("data-del")));
+      });
+
+      document.querySelectorAll("[data-add-abono]").forEach(btn=>{
+        btn.addEventListener("click", ()=> addAbono(btn.getAttribute("data-add-abono")));
+      });
+
+      document.querySelectorAll("[data-add-abono-open]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          e.preventDefault(); // no cerrar/abrir raro
+          const id = btn.getAttribute("data-add-abono-open");
+          const details = btn.closest("details");
+          if(details) details.open = true;
+          const input = document.querySelector(`[data-abono-input="${id}"]`);
+          setTimeout(()=> input?.focus(), 0);
+        });
+      });
+
+      document.querySelectorAll("[data-del-abono]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const [deudaId, abonoId] = btn.getAttribute("data-del-abono").split("|");
+          removeAbono(deudaId, abonoId);
+        });
+      });
     }
 
     btnAgregar.addEventListener("click", addDebt);
@@ -239,7 +403,6 @@
     inpQuien.addEventListener("keydown", (e)=>{ if(e.key === "Enter") inpMonto.focus(); });
     filtro.addEventListener("change", render);
 
-    // primera carga
     render();
   </script>
 </body>
