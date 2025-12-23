@@ -1,32 +1,32 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Control de Deudas</title>
 
   <style>
     :root{
       --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#4b5563; --line:#e5e7eb;
-      --ok:#16a34a; --bad:#dc2626; --info:#0ea5e9; --warn:#f59e0b;
+      --dark:#111827; --ok:#16a34a; --bad:#dc2626; --info:#0ea5e9;
+      --pendBg:#fff7ed; --pendTx:#9a3412; --pendBd:#fed7aa;
+      --paidBg:#ecfdf5; --paidTx:#166534; --paidBd:#bbf7d0;
+      --partBg:#eff6ff; --partTx:#1d4ed8; --partBd:#bfdbfe;
     }
-    body{
-      font-family: Arial, sans-serif;
-      background:var(--bg);
-      margin:0;
-      padding:40px;
-      color:var(--text);
-    }
-    .wrap{ max-width:900px; margin:auto; }
+
+    body{ font-family: Arial, sans-serif; background:var(--bg); margin:0; padding:40px; color:var(--text); }
+    .wrap{ max-width:980px; margin:0 auto; }
     .card{
       background:var(--card);
       padding:26px;
       border-radius:14px;
-      box-shadow:0 10px 25px rgba(0,0,0,.1);
+      box-shadow:0 10px 25px rgba(0,0,0,.10);
       margin-bottom:16px;
     }
+
     h1{ margin:0 0 6px 0; font-size:34px; }
-    .sub{ color:var(--muted); margin:0; }
+    .sub{ margin:0; color:var(--muted); }
+
     .row{ display:grid; grid-template-columns: 1.2fr .7fr .6fr; gap:10px; margin-top:16px; }
     input, select{
       width:100%;
@@ -34,194 +34,486 @@
       border:1px solid var(--line);
       border-radius:10px;
       font-size:14px;
+      background:#fff;
+      outline:none;
     }
+
     button{
       border:0;
       padding:12px 14px;
       border-radius:10px;
       cursor:pointer;
-      font-weight:700;
+      font-weight:800;
       font-size:14px;
+      white-space:nowrap;
     }
-    .btn{ background:#111827; color:#fff; }
-    .btn:hover{ opacity:.9; }
+    .btn{ background:var(--dark); color:#fff; }
+    .btn:hover{ opacity:.92; }
+    .info{ background:var(--info); color:#fff; }
+    .ok{ background:var(--ok); color:#fff; }
+    .del{ background:var(--bad); color:#fff; }
+    .ghost{ background:#11182710; color:#111827; border:1px solid var(--line); }
 
+    .topbar{ display:flex; gap:10px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; margin-top:12px; }
     .stats{
-      margin-top:12px;
       padding:12px;
       border:1px solid var(--line);
       border-radius:12px;
       background:#fafafa;
       font-size:14px;
-      line-height:1.5;
+      line-height:1.7;
+      min-width:320px;
     }
+    .stats b{ color:var(--dark); }
 
+    .list{ margin-top:12px; }
+    .empty{ color:var(--muted); text-align:center; padding:14px; }
+
+    /* Deuda (desplegable) */
     details.item{
       border:1px solid var(--line);
       border-radius:14px;
       background:#fff;
       margin-bottom:12px;
+      overflow:hidden;
     }
     summary{
+      list-style:none;
       cursor:pointer;
       padding:14px;
       display:grid;
-      grid-template-columns: 1.2fr .7fr .7fr auto;
-      gap:10px;
+      grid-template-columns: 1.2fr .8fr .8fr auto;
+      gap:12px;
       align-items:center;
     }
     summary::-webkit-details-marker{ display:none; }
 
-    .who{ font-weight:800; }
-    .mini{ font-size:12px; color:var(--muted); }
-    .money{ font-weight:800; }
+    .who{ font-weight:900; font-size:16px; }
+    .mini{ font-size:12px; color:var(--muted); margin-top:4px; }
+    .money{ font-weight:900; }
 
     .tag{
       font-size:12px;
       padding:4px 8px;
       border-radius:999px;
-      border:1px solid var(--line);
+      border:1px solid transparent;
+      display:inline-block;
     }
-    .pend{ background:#fff7ed; color:#9a3412; }
-    .pag{ background:#ecfdf5; color:#166534; }
-    .par{ background:#eff6ff; color:#1d4ed8; }
+    .tag.pend{ background:var(--pendBg); color:var(--pendTx); border-color:var(--pendBd); }
+    .tag.pag{ background:var(--paidBg); color:var(--paidTx); border-color:var(--paidBd); }
+    .tag.par{ background:var(--partBg); color:var(--partTx); border-color:var(--partBd); }
 
-    .actions{ display:flex; gap:8px; flex-wrap:wrap; }
-    .ok{ background:var(--ok); color:#fff; }
-    .del{ background:var(--bad); color:#fff; }
-    .info{ background:var(--info); color:#fff; }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
 
     .inside{
       border-top:1px solid var(--line);
-      padding:14px;
       background:#fafafa;
+      padding:14px;
     }
+    .inside h4{ margin:0 0 10px 0; }
 
     .abonoRow{
       display:grid;
-      grid-template-columns: 1fr .7fr auto;
+      grid-template-columns: 1fr .9fr auto;
       gap:10px;
+      align-items:center;
       margin-bottom:10px;
     }
 
+    .abonosBox{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
     .abonoItem{
       display:flex;
       justify-content:space-between;
+      gap:10px;
+      padding:10px;
       border-bottom:1px solid var(--line);
-      padding:8px 0;
-      font-size:14px;
+      align-items:center;
     }
+    .abonoItem:last-child{ border-bottom:0; }
 
     .footer{
-      text-align:center;
-      font-size:12px;
       color:var(--muted);
+      font-size:12px;
+      text-align:center;
       margin-top:10px;
     }
 
-    @media(max-width:800px){
+    @media (max-width:880px){
       body{ padding:18px; }
       .row{ grid-template-columns:1fr; }
       summary{ grid-template-columns:1fr; }
+      .actions{ justify-content:flex-start; }
       .abonoRow{ grid-template-columns:1fr; }
+      .stats{ min-width:unset; width:100%; }
     }
   </style>
 </head>
 
 <body>
-<div class="wrap">
+  <div class="wrap">
+    <div class="card">
+      <h1>Control de Deudas</h1>
+      <p class="sub">Organiza tus deudas paso a paso 💙</p>
 
-  <div class="card">
-    <h1>Control de Deudas</h1>
-    <p class="sub">Organiza tus deudas paso a paso 💙</p>
+      <div class="row">
+        <input id="inpQuien" placeholder="¿A quién le debes? (Ej: Nona, Laura, Banco, Rafael)" />
+        <input id="inpMonto" placeholder="Monto inicial (Ej: 250000)" inputmode="numeric" />
+        <button class="btn" id="btnAgregar">Agregar deuda</button>
+      </div>
 
-    <div class="row">
-      <input id="inpQuien" placeholder="¿A quién le debes? (Ej: Nona, Laura, Banco)">
-      <input id="inpMonto" placeholder="Monto inicial" inputmode="numeric">
-      <button class="btn" id="btnAgregar">Agregar deuda</button>
+      <div class="topbar">
+        <div class="stats" id="stats"></div>
+        <select id="filtro">
+          <option value="todas">Todas</option>
+          <option value="pendientes">Pendientes</option>
+          <option value="pagadas">Pagadas</option>
+        </select>
+      </div>
     </div>
 
-    <div class="stats" id="stats"></div>
-
-    <select id="filtro" style="margin-top:10px;">
-      <option value="todas">Todas</option>
-      <option value="pendientes">Pendientes</option>
-      <option value="pagadas">Pagadas</option>
-    </select>
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;">Mis deudas</h3>
+      <div class="list" id="lista"></div>
+      <div class="footer">Tus datos se guardan en este dispositivo (no se suben a ningún servidor).</div>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>Mis deudas</h3>
-    <div id="lista"></div>
-    <div class="footer">Tus datos se guardan solo en este dispositivo.</div>
-  </div>
+  <script>
+    // ✅ Clave principal actual (no la cambies para no perder datos)
+    const KEY = "controlDeudas_app_v1";
 
-</div>
+    const inpQuien = document.getElementById("inpQuien");
+    const inpMonto = document.getElementById("inpMonto");
+    const btnAgregar = document.getElementById("btnAgregar");
+    const lista = document.getElementById("lista");
+    const filtro = document.getElementById("filtro");
+    const stats = document.getElementById("stats");
 
-<script>
-const KEY="controlDeudas_v3";
-const inpQuien=document.getElementById("inpQuien");
-const inpMonto=document.getElementById("inpMonto");
-const btnAgregar=document.getElementById("btnAgregar");
-const lista=document.getElementById("lista");
-const filtro=document.getElementById("filtro");
-const stats=document.getElementById("stats");
+    function moneyCOP(n){
+      try{
+        return new Intl.NumberFormat("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 }).format(n);
+      }catch(e){
+        return "$" + Number(n || 0).toLocaleString("es-CO");
+      }
+    }
 
-const money=n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n);
-const load=()=>JSON.parse(localStorage.getItem(KEY)||"[]");
-const save=d=>localStorage.setItem(KEY,JSON.stringify(d));
-const uid=()=>Math.random().toString(16).slice(2)+Date.now();
+    function normalizeAmount(value){
+      const cleaned = (value || "").toString().replace(/[^\d]/g, "");
+      return cleaned ? Number(cleaned) : 0;
+    }
 
-const saldo=d=>d.monto-(d.abonos||[]).reduce((a,b)=>a+b.monto,0);
+    function uid(){
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
 
-btnAgregar.onclick=()=>{
-  const q=inpQuien.value.trim();
-  const m=parseInt(inpMonto.value.replace(/\D/g,""));
-  if(!q||!m) return alert("Completa los datos");
-  const d=load();
-  d.unshift({id:uid(),quien:q,monto:m,abonos:[],fecha:new Date().toISOString()});
-  save(d);
-  inpQuien.value=""; inpMonto.value="";
-  render();
-};
+    function safeParse(json){
+      try{ return JSON.parse(json); }catch(e){ return null; }
+    }
 
-function addAbono(id){
-  const monto=parseInt(document.querySelector(`[data-m="${id}"]`).value.replace(/\D/g,""));
-  const fecha=document.querySelector(`[data-f="${id}"]`).value;
-  if(!monto||!fecha) return alert("Monto y fecha");
-  const d=load();
-  const it=d.find(x=>x.id===id);
-  it.abonos.unshift({id:uid(),monto,fecha:new Date(fecha+"T12:00:00").toISOString()});
-  save(d); render();
-}
+    // ---- Migración: intenta traer datos de versiones anteriores (si existen) ----
+    function migrateIfNeeded(){
+      const current = safeParse(localStorage.getItem(KEY));
+      if (Array.isArray(current) && current.length) return;
 
-function render(){
-  const d=load();
-  const all=d.map(x=>({...x,saldo:saldo(x)}));
-  stats.innerHTML=`Total: <b>${money(all.reduce((a,b)=>a+b.saldo,0))}</b>`;
-  lista.innerHTML="";
-  all.filter(x=>filtro.value==="todas"||filtro.value==="pendientes"&&x.saldo>0||filtro.value==="pagadas"&&x.saldo<=0)
-  .forEach(x=>{
-    lista.innerHTML+=`
-    <details class="item">
-      <summary>
-        <div><div class="who">${x.quien}</div><div class="mini">${new Date(x.fecha).toLocaleDateString()}</div></div>
-        <div><div class="mini">Inicial</div><div class="money">${money(x.monto)}</div></div>
-        <div><div class="mini">Saldo</div><div class="money">${money(x.saldo)}</div></div>
-        <div class="actions"><span class="tag ${x.saldo<=0?"pag":"par"}">${x.saldo<=0?"Pagada":"Con abonos"}</span></div>
-      </summary>
-      <div class="inside">
-        <div class="abonoRow">
-          <input data-m="${x.id}" placeholder="Monto abono">
-          <input type="date" data-f="${x.id}">
-          <button class="info" onclick="addAbono('${x.id}')">Guardar</button>
-        </div>
-        ${(x.abonos||[]).map(a=>`<div class="abonoItem"><div>${money(a.monto)}</div><div class="mini">${new Date(a.fecha).toLocaleDateString()}</div></div>`).join("")}
-      </div>
-    </details>`;
-  });
-}
-render();
-</script>
+      const keysToTry = ["controlDeudas_v3", "controlDeudas_v2", "controlDeudas_v1"];
+      for (const k of keysToTry){
+        const old = safeParse(localStorage.getItem(k));
+        if (!Array.isArray(old) || old.length === 0) continue;
+
+        // Convertimos al formato nuevo
+        const converted = old.map(x => {
+          // v3 simple: {quien, monto, abonos, fecha}
+          const montoInicial = x.montoInicial ?? x.monto ?? 0;
+          const creado = x.creado ?? x.fecha ?? new Date().toISOString();
+          const abonos = Array.isArray(x.abonos) ? x.abonos.map(a => ({
+            id: a.id || uid(),
+            monto: Number(a.monto || 0),
+            fecha: a.fecha || new Date().toISOString()
+          })) : [];
+
+          return {
+            id: x.id || uid(),
+            quien: x.quien || "Sin nombre",
+            montoInicial: Number(montoInicial || 0),
+            creado,
+            abonos,
+            forzadaPagada: Boolean(x.forzadaPagada || false)
+          };
+        });
+
+        localStorage.setItem(KEY, JSON.stringify(converted));
+        return;
+      }
+    }
+
+    function load(){
+      migrateIfNeeded();
+      const data = safeParse(localStorage.getItem(KEY));
+      return Array.isArray(data) ? data : [];
+    }
+
+    function save(data){
+      localStorage.setItem(KEY, JSON.stringify(data));
+    }
+
+    function getAbonado(item){
+      return (item.abonos || []).reduce((a,b)=> a + (Number(b.monto)||0), 0);
+    }
+
+    function getSaldo(item){
+      const saldo = (Number(item.montoInicial)||0) - getAbonado(item);
+      return Math.max(0, saldo);
+    }
+
+    function getEstado(item){
+      if (item.forzadaPagada === true) return "pagada";
+      return (getSaldo(item) <= 0) ? "pagada" : "pendiente";
+    }
+
+    function addDebt(){
+      const quien = (inpQuien.value || "").trim();
+      const montoInicial = normalizeAmount(inpMonto.value);
+
+      if(!quien){
+        alert("Escribe a quién le debes 🙂");
+        inpQuien.focus();
+        return;
+      }
+      if(!montoInicial || montoInicial <= 0){
+        alert("Escribe un monto válido 🙂");
+        inpMonto.focus();
+        return;
+      }
+
+      const data = load();
+      data.unshift({
+        id: uid(),
+        quien,
+        montoInicial,
+        creado: new Date().toISOString(),
+        abonos: [],
+        forzadaPagada: false
+      });
+      save(data);
+
+      inpQuien.value = "";
+      inpMonto.value = "";
+      inpQuien.focus();
+      render();
+    }
+
+    function removeDebt(id){
+      if(!confirm("¿Eliminar esta deuda y sus abonos?")) return;
+      const data = load().filter(x => x.id !== id);
+      save(data);
+      render();
+    }
+
+    function togglePaid(id){
+      const data = load();
+      const item = data.find(x => x.id === id);
+      if(!item) return;
+
+      // Si está forzada pagada -> vuelve a pendiente
+      // Si está pendiente -> fuerza pagada
+      item.forzadaPagada = !item.forzadaPagada;
+      save(data);
+      render();
+    }
+
+    function addAbono(id){
+      const inputMonto = document.querySelector(`[data-abono-input="${id}"]`);
+      const inputFecha = document.querySelector(`[data-abono-date="${id}"]`);
+
+      const monto = normalizeAmount(inputMonto?.value);
+      if(!monto || monto <= 0){
+        alert("Escribe un abono válido 🙂");
+        inputMonto?.focus();
+        return;
+      }
+
+      // Si no pone fecha, usamos hoy. Si pone fecha, respetamos esa fecha.
+      const picked = (inputFecha && inputFecha.value) ? inputFecha.value : null;
+      const fechaISO = picked
+        ? new Date(picked + "T12:00:00").toISOString()
+        : new Date().toISOString();
+
+      const data = load();
+      const item = data.find(x => x.id === id);
+      if(!item) return;
+
+      item.abonos = item.abonos || [];
+      item.abonos.unshift({ id: uid(), monto, fecha: fechaISO });
+
+      // Si estaba forzada pagada pero aún tiene saldo, la dejamos como forzada (decisión del usuario)
+      // (no hacemos nada automático)
+
+      save(data);
+
+      if(inputMonto) inputMonto.value = "";
+      if(inputFecha) inputFecha.value = "";
+      render();
+    }
+
+    function removeAbono(deudaId, abonoId){
+      const data = load();
+      const item = data.find(x => x.id === deudaId);
+      if(!item) return;
+
+      item.abonos = (item.abonos || []).filter(a => a.id !== abonoId);
+      save(data);
+      render();
+    }
+
+    function render(){
+      const raw = load();
+
+      // Enriquecemos cada item con abonado/saldo/estado (sin modificar el guardado)
+      const all = raw.map(x => ({
+        ...x,
+        abonado: getAbonado(x),
+        saldo: getSaldo(x),
+        estado: getEstado(x)
+      }));
+
+      // Totales generales
+      const totalInicial = all.reduce((a,b)=> a + (Number(b.montoInicial)||0), 0);
+      const totalAbonado = all.reduce((a,b)=> a + (Number(b.abonado)||0), 0);
+      const totalSaldo = all.reduce((a,b)=> a + (Number(b.saldo)||0), 0);
+
+      const pendientes = all.filter(x => x.estado === "pendiente");
+      const pagadas = all.filter(x => x.estado === "pagada");
+
+      stats.innerHTML =
+        `Total inicial: <b>${moneyCOP(totalInicial)}</b> · ` +
+        `Total abonado: <b>${moneyCOP(totalAbonado)}</b> · ` +
+        `Saldo total: <b>${moneyCOP(totalSaldo)}</b><br>` +
+        `Pendientes: <b>${pendientes.length}</b> (${moneyCOP(pendientes.reduce((a,b)=>a+b.saldo,0))}) · ` +
+        `Pagadas: <b>${pagadas.length}</b>`;
+
+      // ✅ Filtro correcto
+      let view = all;
+      if (filtro.value === "pendientes") view = all.filter(x => x.estado === "pendiente");
+      if (filtro.value === "pagadas") view = all.filter(x => x.estado === "pagada");
+
+      if(view.length === 0){
+        lista.innerHTML = `<div class="empty">Aún no tienes deudas en esta vista.</div>`;
+        return;
+      }
+
+      lista.innerHTML = view.map(x => {
+        const creado = new Date(x.creado || new Date().toISOString());
+        const mini = isNaN(creado) ? "" : `Creada: ${creado.toLocaleDateString("es-CO")}`;
+
+        let tag = "";
+        if (x.estado === "pagada") tag = `<span class="tag pag">Pagada</span>`;
+        else if (x.abonado > 0) tag = `<span class="tag par">Con abonos</span>`;
+        else tag = `<span class="tag pend">Pendiente</span>`;
+
+        const abonos = x.abonos || [];
+        const abonosHtml = abonos.length
+          ? abonos.map(a => {
+              const f = new Date(a.fecha);
+              const fd = isNaN(f) ? "" : f.toLocaleDateString("es-CO", {year:"numeric", month:"2-digit", day:"2-digit"});
+              return `
+                <div class="abonoItem">
+                  <div>
+                    <div><strong>${moneyCOP(a.monto)}</strong></div>
+                    <div class="mini">${fd}</div>
+                  </div>
+                  <button class="ghost" data-del-abono="${x.id}|${a.id}">Quitar</button>
+                </div>
+              `;
+            }).join("")
+          : `<div class="empty" style="padding:10px;">Aún no hay abonos.</div>`;
+
+        return `
+          <details class="item">
+            <summary>
+              <div>
+                <div class="who">${x.quien}</div>
+                <div class="mini">${mini}</div>
+              </div>
+
+              <div>
+                <div class="mini">Inicial</div>
+                <div class="money">${moneyCOP(x.montoInicial)}</div>
+                <div class="mini">Abonado: <b>${moneyCOP(x.abonado)}</b></div>
+              </div>
+
+              <div>
+                <div class="mini">Saldo</div>
+                <div class="money">${moneyCOP(x.saldo)}</div>
+                ${tag}
+              </div>
+
+              <div class="actions">
+                <button class="info" data-add-abono-open="${x.id}">Agregar abono</button>
+                <button class="ok" data-toggle="${x.id}">${x.forzadaPagada ? "Volver pendiente" : "Marcar pagada"}</button>
+                <button class="del" data-del="${x.id}">Eliminar</button>
+              </div>
+            </summary>
+
+            <div class="inside">
+              <h4>Abonos</h4>
+
+              <div class="abonoRow">
+                <input data-abono-input="${x.id}" placeholder="Monto del abono (Ej: 200000)" inputmode="numeric" />
+                <input type="date" data-abono-date="${x.id}" />
+                <button class="info" data-add-abono="${x.id}">Guardar abono</button>
+              </div>
+
+              <div class="abonosBox">
+                ${abonosHtml}
+              </div>
+            </div>
+          </details>
+        `;
+      }).join("");
+
+      // Eventos
+      document.querySelectorAll("[data-del]").forEach(btn=>{
+        btn.addEventListener("click", ()=> removeDebt(btn.getAttribute("data-del")));
+      });
+
+      document.querySelectorAll("[data-toggle]").forEach(btn=>{
+        btn.addEventListener("click", ()=> togglePaid(btn.getAttribute("data-toggle")));
+      });
+
+      document.querySelectorAll("[data-add-abono]").forEach(btn=>{
+        btn.addEventListener("click", ()=> addAbono(btn.getAttribute("data-add-abono")));
+      });
+
+      document.querySelectorAll("[data-add-abono-open]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          e.preventDefault();
+          const id = btn.getAttribute("data-add-abono-open");
+          const details = btn.closest("details");
+          if(details) details.open = true;
+          const input = document.querySelector(`[data-abono-input="${id}"]`);
+          setTimeout(()=> input?.focus(), 0);
+        });
+      });
+
+      document.querySelectorAll("[data-del-abono]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const [deudaId, abonoId] = btn.getAttribute("data-del-abono").split("|");
+          removeAbono(deudaId, abonoId);
+        });
+      });
+    }
+
+    btnAgregar.addEventListener("click", addDebt);
+    inpMonto.addEventListener("keydown", (e)=>{ if(e.key === "Enter") addDebt(); });
+    inpQuien.addEventListener("keydown", (e)=>{ if(e.key === "Enter") inpMonto.focus(); });
+    filtro.addEventListener("change", render);
+
+    render();
+  </script>
 </body>
 </html>
