@@ -1,42 +1,246 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Control de Deudas</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 40px;
+    :root{ --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#4b5563; --line:#e5e7eb; --ok:#16a34a; --bad:#dc2626; }
+    body{ font-family: Arial, sans-serif; background:var(--bg); margin:0; padding:40px; color:var(--text); }
+    .wrap{ max-width:780px; margin:0 auto; }
+    .card{
+      background:var(--card);
+      padding:26px;
+      border-radius:14px;
+      box-shadow:0 10px 25px rgba(0,0,0,.10);
+      margin-bottom:16px;
     }
-
-    .card {
-      background: white;
-      max-width: 500px;
-      margin: auto;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    h1{ margin:0 0 6px 0; font-size:34px; }
+    .sub{ color:var(--muted); margin:0; }
+    .row{ display:grid; grid-template-columns: 1.2fr .6fr .6fr; gap:10px; margin-top:16px; }
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      font-size:14px;
+      background:#fff;
     }
-
-    h1 {
-      margin-top: 0;
-      color: #1f2937;
+    button{
+      border:0;
+      padding:12px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
     }
-
-    p {
-      color: #4b5563;
+    .btn{ background:#111827; color:#fff; }
+    .btn:hover{ opacity:.92; }
+    .topbar{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:14px; }
+    .stats{ color:var(--muted); font-size:14px; }
+    .list{ margin-top:12px; }
+    .item{
+      display:grid;
+      grid-template-columns: 1.2fr .6fr .7fr auto;
+      gap:10px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      margin-bottom:10px;
+    }
+    .who{ font-weight:700; }
+    .tag{ font-size:12px; padding:4px 8px; border-radius:999px; display:inline-block; }
+    .tag.pend{ background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+    .tag.pag{ background:#ecfdf5; color:#166534; border:1px solid #bbf7d0; }
+    .mini{ color:var(--muted); font-size:12px; margin-top:4px; }
+    .actions{ display:flex; gap:8px; justify-content:flex-end; }
+    .ok{ background:var(--ok); color:#fff; }
+    .del{ background:var(--bad); color:#fff; }
+    .empty{ color:var(--muted); padding:14px; text-align:center; }
+    .footer{ color:var(--muted); font-size:12px; text-align:center; margin-top:10px; }
+    @media (max-width:720px){
+      body{ padding:18px; }
+      .row{ grid-template-columns: 1fr; }
+      .item{ grid-template-columns: 1fr; }
+      .actions{ justify-content:flex-start; }
     }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>Control de Deudas</h1>
-    <p>Organiza tus deudas paso a paso 💙</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>Control de Deudas</h1>
+      <p class="sub">Organiza tus deudas paso a paso 💙</p>
+
+      <div class="row">
+        <input id="inpQuien" placeholder="¿A quién le debes? (Ej: Norida, Banco, Rafael)" />
+        <input id="inpMonto" placeholder="Monto (Ej: 250000)" inputmode="numeric" />
+        <button class="btn" id="btnAgregar">Agregar deuda</button>
+      </div>
+
+      <div class="topbar">
+        <div class="stats" id="stats"></div>
+        <select id="filtro">
+          <option value="todas">Todas</option>
+          <option value="pendientes">Pendientes</option>
+          <option value="pagadas">Pagadas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;">Mis deudas</h3>
+      <div class="list" id="lista"></div>
+      <div class="footer">Tus datos se guardan en este dispositivo (no se suben a ningún servidor).</div>
+    </div>
   </div>
+
+  <script>
+    const KEY = "controlDeudas_v1";
+
+    const inpQuien = document.getElementById("inpQuien");
+    const inpMonto = document.getElementById("inpMonto");
+    const btnAgregar = document.getElementById("btnAgregar");
+    const lista = document.getElementById("lista");
+    const filtro = document.getElementById("filtro");
+    const stats = document.getElementById("stats");
+
+    function moneyCOP(n){
+      try{
+        return new Intl.NumberFormat("es-CO", { style:"currency", currency:"COP", maximumFractionDigits:0 }).format(n);
+      }catch(e){
+        return "$" + Number(n).toLocaleString("es-CO");
+      }
+    }
+
+    function load(){
+      try{
+        return JSON.parse(localStorage.getItem(KEY)) || [];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function save(data){
+      localStorage.setItem(KEY, JSON.stringify(data));
+    }
+
+    function uid(){
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+
+    function normalizeAmount(value){
+      // permite escribir con puntos/comedas y lo convierte a número
+      const cleaned = (value || "").toString().replace(/[^\d]/g, "");
+      return cleaned ? Number(cleaned) : 0;
+    }
+
+    function addDebt(){
+      const quien = (inpQuien.value || "").trim();
+      const monto = normalizeAmount(inpMonto.value);
+
+      if(!quien){
+        alert("Escribe a quién le debes 🙂");
+        inpQuien.focus();
+        return;
+      }
+      if(!monto || monto <= 0){
+        alert("Escribe un monto válido 🙂");
+        inpMonto.focus();
+        return;
+      }
+
+      const data = load();
+      data.unshift({
+        id: uid(),
+        quien,
+        monto,
+        estado: "pendiente",
+        creado: new Date().toISOString()
+      });
+      save(data);
+
+      inpQuien.value = "";
+      inpMonto.value = "";
+      inpQuien.focus();
+
+      render();
+    }
+
+    function togglePaid(id){
+      const data = load();
+      const item = data.find(x => x.id === id);
+      if(!item) return;
+      item.estado = (item.estado === "pendiente") ? "pagada" : "pendiente";
+      save(data);
+      render();
+    }
+
+    function removeDebt(id){
+      if(!confirm("¿Eliminar esta deuda?")) return;
+      const data = load().filter(x => x.id !== id);
+      save(data);
+      render();
+    }
+
+    function applyFilter(data){
+      if(filtro.value === "pendientes") return data.filter(x => x.estado === "pendiente");
+      if(filtro.value === "pagadas") return data.filter(x => x.estado === "pagada");
+      return data;
+    }
+
+    function render(){
+      const data = load();
+      const pendientes = data.filter(x => x.estado === "pendiente");
+      const pagadas = data.filter(x => x.estado === "pagada");
+
+      const totalPend = pendientes.reduce((a,b)=>a+b.monto,0);
+      stats.textContent = `Pendientes: ${pendientes.length} (${moneyCOP(totalPend)}) · Pagadas: ${pagadas.length}`;
+
+      const view = applyFilter(data);
+
+      if(view.length === 0){
+        lista.innerHTML = `<div class="empty">Aún no tienes deudas en esta vista.</div>`;
+        return;
+      }
+
+      lista.innerHTML = view.map(x => {
+        const tag = x.estado === "pendiente"
+          ? `<span class="tag pend">Pendiente</span>`
+          : `<span class="tag pag">Pagada</span>`;
+
+        const fecha = new Date(x.creado);
+        const mini = isNaN(fecha) ? "" : `Creada: ${fecha.toLocaleDateString("es-CO")}`;
+
+        return `
+          <div class="item">
+            <div>
+              <div class="who">${x.quien}</div>
+              <div class="mini">${mini}</div>
+            </div>
+            <div><strong>${moneyCOP(x.monto)}</strong></div>
+            <div>${tag}</div>
+            <div class="actions">
+              <button class="ok" onclick="togglePaid('${x.id}')">${x.estado === "pendiente" ? "Marcar pagada" : "Volver pendiente"}</button>
+              <button class="del" onclick="removeDebt('${x.id}')">Eliminar</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    btnAgregar.addEventListener("click", addDebt);
+    inpMonto.addEventListener("keydown", (e)=>{ if(e.key === "Enter") addDebt(); });
+    inpQuien.addEventListener("keydown", (e)=>{ if(e.key === "Enter") inpMonto.focus(); });
+    filtro.addEventListener("change", render);
+
+    // primera carga
+    render();
+  </script>
 </body>
 </html>
